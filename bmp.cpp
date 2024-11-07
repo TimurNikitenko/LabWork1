@@ -1,3 +1,8 @@
+/* Timur Nikitenko st128375@student.spbu.ru
+ *first labwork
+ */
+
+
 #include "bmp.hpp"
 #include <stdexcept>
 #include <iostream>

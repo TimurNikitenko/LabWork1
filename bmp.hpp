@@ -1,3 +1,7 @@
+/* Timur Nikitenko st128375@student.spbu.ru
+ *first labwork
+ */
+
 #ifndef BMP_HPP
 #define BMP_HPP
 
