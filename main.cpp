@@ -1,5 +1,5 @@
 /* Timur Nikitenko st128375@student.spbu.ru
- *first labwork
+ *first labwork main function
  */
 
 

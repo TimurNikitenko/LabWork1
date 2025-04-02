@@ -1,5 +1,5 @@
 /*Nikitenko Timur st128375@student.spbu.ru
-  BMP
+  struct and functions declarations
 */
 #ifndef BMP_HPP
 #define BMP_HPP
