@@ -21,6 +21,8 @@ int main()
     image.writeToRaw("ccwrotated.raw", image.counterClockwiseRotate(vector));
     image.saveAsGaussianImage(image.counterClockwiseRotate(vector),5);
 
+    #include <cstdlib>  // For system()
+
     // commands below convert raw files to png format
     system("convert -size 512x512 -depth 8 gray:cwrotated.raw cwrotated.png");
     system("convert -size 512x512 -depth 8 gray:ccwrotated.raw ccwrotated.png");
