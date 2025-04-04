@@ -8,6 +8,10 @@ OBJ = $(SRC:.cpp=.o)
 RAW_OUT = cwrotated.raw ccwrotated.raw gaussian_blurred.raw
 PNG_OUT = $(RAW_OUT:.raw=.png)
 
+.PHONY: all clean
+
+all: $(TARGET)
+
 $(TARGET): $(OBJ)
 	$(CXX) $(CXXFLAGS) -o $(TARGET) $(OBJ)
 
@@ -17,4 +21,3 @@ $(TARGET): $(OBJ)
 clean:
 	rm -f $(OBJ) $(TARGET) $(RAW_OUT) $(PNG_OUT)
 
-.PHONY: clean
