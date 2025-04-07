@@ -141,22 +141,17 @@ T Image::clamp(T value, T min_value, T max_value)
 
 
 void Image::saveAsGaussianImage(const std::vector<unsigned char>& img, int sigma) {
-    // Store original dimensions (critical for rectangular images)
     const int original_width = width;
     const int original_height = height;
     
-    // Convert to 2D using current dimensions
     auto img_2d = oneDimToTwoDim(img);
     
-    // Generate Gaussian kernel
     auto [kernel, kernel_length] = makeKernel(sigma);
     const int kernel_radius = kernel_length / 2;
     
-    // Create output buffer (using original dimensions)
     std::vector<std::vector<unsigned char>> blurred_img(original_height, 
                                                       std::vector<unsigned char>(original_width, 0));
 
-    // Apply Gaussian blur
     for (int y = 0; y < original_height; y++) {
         for (int x = 0; x < original_width; x++) {
             float sum = 0.0f;
@@ -167,7 +162,6 @@ void Image::saveAsGaussianImage(const std::vector<unsigned char>& img, int sigma
                     int ny = y + ky;
                     int nx = x + kx;
                     
-                    // Boundary checks using original dimensions
                     if (ny >= 0 && ny < original_height && nx >= 0 && nx < original_width) {
                         float weight = kernel[ky + kernel_radius][kx + kernel_radius];
                         sum += img_2d[ny][nx] * weight;
@@ -176,16 +170,14 @@ void Image::saveAsGaussianImage(const std::vector<unsigned char>& img, int sigma
                 }
             }
 
-            // Normalize and clamp
             if (weight_sum > 0) sum /= weight_sum;
             blurred_img[y][x] = static_cast<unsigned char>(clamp(std::round(sum), 0.0f, 255.0f));
         }
     }
 
-    // Convert back to 1D and save
     auto blurred_1d = twoDimToOneDim(blurred_img);
     writeToRaw("gaussian_blurred.raw", blurred_1d);
-    // Restore dimensions (in case they were modified)
+ 
     width = original_width;
     height = original_height;
 
