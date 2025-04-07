@@ -32,7 +32,7 @@ void Image::writeToRaw(const std::string& filename, const std::vector<unsigned c
 std::vector<std::vector<unsigned char>> Image::oneDimToTwoDim(const std::vector<unsigned char>& one_dim)
 {
 
-    if (one_dim.size() != static_cast<size_t>(width * height)) {  // Cast to size_t
+    if (one_dim.size() != static_cast<size_t>(width * height)) {
         throw std::runtime_error("Buffer size mismatch in oneDimToTwoDim");
     }
 
@@ -62,28 +62,35 @@ std::vector<unsigned char> Image::twoDimToOneDim(const std::vector<std::vector<u
 }
 
 std::vector<unsigned char> Image::rotateImpl(const std::vector<unsigned char>& img, bool clockwise) {
+    if (img.size() != static_cast<size_t>(width * height)) {
+        throw std::runtime_error("Input image size mismatch");
+    }
+
     auto img_2d = oneDimToTwoDim(img);
+    
     const int out_width = height;
     const int out_height = width;
-
-    std::vector<std::vector<unsigned char>> rotated_img(out_width, std::vector<unsigned char>(out_height));
+    
+    std::vector<std::vector<unsigned char>> rotated_img(out_width, 
+                                                     std::vector<unsigned char>(out_height));
 
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
             if (clockwise) {
-                rotated_img[x][height - y - 1] = img_2d[y][x];
+                rotated_img[y][width - 1 - x] = img_2d[y][x];
             } else {
-                rotated_img[width - x - 1][y] = img_2d[y][x];
+                rotated_img[height - 1 - y][x] = img_2d[y][x];
             }
         }
     }
 
-    // Use this instead of manual conversion:
-    std::vector<unsigned char> result;
-    result.reserve(out_width * out_height);
-    for (const auto& row : rotated_img) {
-        result.insert(result.end(), row.begin(), row.end());
+    std::vector<unsigned char> result(out_width * out_height);
+    for (int y = 0; y < out_height; y++) {
+        for (int x = 0; x < out_width; x++) {
+            result[y * out_width + x] = rotated_img[x][y];
+        }
     }
+
     return result;
 }
 
@@ -178,8 +185,8 @@ void Image::saveAsGaussianImage(const std::vector<unsigned char>& img, int sigma
     // Convert back to 1D and save
     auto blurred_1d = twoDimToOneDim(blurred_img);
     writeToRaw("gaussian_blurred.raw", blurred_1d);
-    
     // Restore dimensions (in case they were modified)
     width = original_width;
     height = original_height;
+
 }
