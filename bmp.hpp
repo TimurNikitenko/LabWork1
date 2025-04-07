@@ -31,9 +31,10 @@ public:
     void saveAsGaussianImage(const std::vector<unsigned char>& img, int sigma);
 
 private:
+    std::vector<unsigned char> rotateImpl(const std::vector<unsigned char>& img, bool clockwise);
     std::pair<std::vector<std::vector<float>>, int> makeKernel(int sigma);
     template<typename T>
     T clamp(T value, T min_value, T max_value);
 };
 
-#endif // BMP_HPP             
+#endif // BMP_HPP                

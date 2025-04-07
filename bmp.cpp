@@ -9,6 +9,7 @@ Image::Image(int width, int height, std::string path)
 {
 }
 
+
 std::vector<unsigned char> Image::readToVector(const std::string& path, int size)
 {
     std::ifstream file(path, std::ios::binary);
@@ -30,6 +31,11 @@ void Image::writeToRaw(const std::string& filename, const std::vector<unsigned c
 
 std::vector<std::vector<unsigned char>> Image::oneDimToTwoDim(const std::vector<unsigned char>& one_dim)
 {
+
+    if (one_dim.size() != static_cast<size_t>(width * height)) {  // Cast to size_t
+        throw std::runtime_error("Buffer size mismatch in oneDimToTwoDim");
+    }
+
     std::vector<std::vector<unsigned char>> two_dim(height, std::vector<unsigned char>(width));
     for (int y = 0; y < height; y++)
     {
@@ -40,6 +46,7 @@ std::vector<std::vector<unsigned char>> Image::oneDimToTwoDim(const std::vector<
     }
     return two_dim;
 }
+
 
 std::vector<unsigned char> Image::twoDimToOneDim(const std::vector<std::vector<unsigned char>>& two_dim)
 {
@@ -54,25 +61,38 @@ std::vector<unsigned char> Image::twoDimToOneDim(const std::vector<std::vector<u
     return one_dim;
 }
 
-std::vector<unsigned char> Image::clockwiseRotate(const std::vector<unsigned char>& img)
-{
+std::vector<unsigned char> Image::rotateImpl(const std::vector<unsigned char>& img, bool clockwise) {
     auto img_2d = oneDimToTwoDim(img);
-    std::vector<std::vector<unsigned char>> rotated_img(width, std::vector<unsigned char>(height));
+    const int out_width = height;
+    const int out_height = width;
 
-    for (int y = 0; y < height; y++)
-    {
-        for (int x = 0; x < width; x++)
-        {
-            rotated_img[x][height - y - 1] = img_2d[y][x];
+    std::vector<std::vector<unsigned char>> rotated_img(out_width, std::vector<unsigned char>(out_height));
+
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            if (clockwise) {
+                rotated_img[x][height - y - 1] = img_2d[y][x];
+            } else {
+                rotated_img[width - x - 1][y] = img_2d[y][x];
+            }
         }
     }
 
-    return twoDimToOneDim(rotated_img);
+    // Use this instead of manual conversion:
+    std::vector<unsigned char> result;
+    result.reserve(out_width * out_height);
+    for (const auto& row : rotated_img) {
+        result.insert(result.end(), row.begin(), row.end());
+    }
+    return result;
 }
 
-std::vector<unsigned char> Image::counterClockwiseRotate(const std::vector<unsigned char>& img)
-{
-    return clockwiseRotate(clockwiseRotate(clockwiseRotate(img)));
+std::vector<unsigned char> Image::clockwiseRotate(const std::vector<unsigned char>& img) {
+    return rotateImpl(img, true);
+}
+
+std::vector<unsigned char> Image::counterClockwiseRotate(const std::vector<unsigned char>& img) {
+    return rotateImpl(img, false);
 }
 
 std::pair<std::vector<std::vector<float>>, int> Image::makeKernel(int sigma)
@@ -104,48 +124,62 @@ std::pair<std::vector<std::vector<float>>, int> Image::makeKernel(int sigma)
     return {kernel, kernel_length};
 }
 
+
+
 template <typename T>
 T Image::clamp(T value, T min_value, T max_value)
 {
     return (value < min_value) ? min_value : (value > max_value ? max_value : value);
 }
 
-void Image::saveAsGaussianImage(const std::vector<unsigned char>& img, int sigma)
-{
+
+void Image::saveAsGaussianImage(const std::vector<unsigned char>& img, int sigma) {
+    // Store original dimensions (critical for rectangular images)
+    const int original_width = width;
+    const int original_height = height;
+    
+    // Convert to 2D using current dimensions
     auto img_2d = oneDimToTwoDim(img);
-    auto kernel_pair = makeKernel(sigma);
-    auto kernel = kernel_pair.first;
-    int kernel_length = kernel_pair.second;
-    int kernel_radius = kernel_length / 2;
+    
+    // Generate Gaussian kernel
+    auto [kernel, kernel_length] = makeKernel(sigma);
+    const int kernel_radius = kernel_length / 2;
+    
+    // Create output buffer (using original dimensions)
+    std::vector<std::vector<unsigned char>> blurred_img(original_height, 
+                                                      std::vector<unsigned char>(original_width, 0));
 
-    std::vector<std::vector<unsigned char>> blurred_img(height, std::vector<unsigned char>(width, 0));
-
-    for (int y = 0; y < height; y++)
-    {
-        for (int x = 0; x < width; x++)
-        {
+    // Apply Gaussian blur
+    for (int y = 0; y < original_height; y++) {
+        for (int x = 0; x < original_width; x++) {
             float sum = 0.0f;
+            float weight_sum = 0.0f;
 
-            for (int ky = -kernel_radius; ky <= kernel_radius; ky++)
-            {
-                for (int kx = -kernel_radius; kx <= kernel_radius; kx++)
-                {
+            for (int ky = -kernel_radius; ky <= kernel_radius; ky++) {
+                for (int kx = -kernel_radius; kx <= kernel_radius; kx++) {
                     int ny = y + ky;
                     int nx = x + kx;
-
-                    if (ny < 0) ny = 0;
-                    if (ny >= height) ny = height - 1;
-                    if (nx < 0) nx = 0;
-                    if (nx >= width) nx = width - 1;
-
-		    sum += img_2d[ny][nx] * kernel[ky + kernel_radius][kx + kernel_radius];
+                    
+                    // Boundary checks using original dimensions
+                    if (ny >= 0 && ny < original_height && nx >= 0 && nx < original_width) {
+                        float weight = kernel[ky + kernel_radius][kx + kernel_radius];
+                        sum += img_2d[ny][nx] * weight;
+                        weight_sum += weight;
+                    }
                 }
             }
 
+            // Normalize and clamp
+            if (weight_sum > 0) sum /= weight_sum;
             blurred_img[y][x] = static_cast<unsigned char>(clamp(std::round(sum), 0.0f, 255.0f));
         }
     }
 
-    auto blurred_img_1d = twoDimToOneDim(blurred_img);
-    writeToRaw("gaussian_blurred.raw", blurred_img_1d);
+    // Convert back to 1D and save
+    auto blurred_1d = twoDimToOneDim(blurred_img);
+    writeToRaw("gaussian_blurred.raw", blurred_1d);
+    
+    // Restore dimensions (in case they were modified)
+    width = original_width;
+    height = original_height;
 }
