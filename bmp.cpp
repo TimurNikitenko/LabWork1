@@ -67,19 +67,17 @@ std::vector<unsigned char> Image::rotateImpl(const std::vector<unsigned char>& i
     }
 
     auto img_2d = oneDimToTwoDim(img);
-    
     const int out_width = height;
     const int out_height = width;
     
-    std::vector<std::vector<unsigned char>> rotated_img(out_width, 
-                                                     std::vector<unsigned char>(out_height));
+    std::vector<std::vector<unsigned char>> rotated_img(out_height, std::vector<unsigned char>(out_width));
 
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
             if (clockwise) {
-                rotated_img[y][width - 1 - x] = img_2d[y][x];
+                rotated_img[x][height - 1 - y] = img_2d[y][x];
             } else {
-                rotated_img[height - 1 - y][x] = img_2d[y][x];
+                rotated_img[width - 1 - x][y] = img_2d[y][x];
             }
         }
     }
@@ -87,7 +85,7 @@ std::vector<unsigned char> Image::rotateImpl(const std::vector<unsigned char>& i
     std::vector<unsigned char> result(out_width * out_height);
     for (int y = 0; y < out_height; y++) {
         for (int x = 0; x < out_width; x++) {
-            result[y * out_width + x] = rotated_img[x][y];
+            result[y * out_width + x] = rotated_img[y][x]; 
         }
     }
 
