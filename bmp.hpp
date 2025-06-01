@@ -37,4 +37,6 @@ private:
     T clamp(T value, T min_value, T max_value);
 };
 
-#endif // BMP_HPP                               
+#endif // BMP_HPP                                 
+
+

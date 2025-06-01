@@ -5,7 +5,17 @@
 st128375@student.spbu.ru
 ## Description
 First lab work for loading and processing bitmap image
+
+Also compares serial vs parallel implementations of image operations.
 ## Build 
-make
+make serial   # Build serial version
+make parallel # Build parallel version
 ## Run
-./start
+./image_processor_serial # Run serial version
+./image_processor_parallel  # Run parallel version
+## Perfomance comparison
+make benchmark # Build and run both version comparing their perfomance
+### Requirements
+- GCC (with OpenMP support)
+- ImageMagick (for PNG conversion)
+

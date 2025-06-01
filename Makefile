@@ -1,22 +1,39 @@
-TARGET = start
 CXX = g++
-CXXFLAGS = -std=c++17 -Wall -g 
-SRC = main.cpp bmp.cpp
-OBJ = $(SRC:.cpp=.o)
+CXXFLAGS = -std=c++17 -Wall -Wextra -g
+LDFLAGS = 
 
-RAW_OUT = clockwise.raw counter_clockwise.raw gaussian_blurred.raw rotated_and_blurred.raw
-PNG_OUT = $(RAW_OUT:.raw=.png)
-XMP_OUT = $(RAW_OUT:.raw=.raw.xmp)
+# Targets
+SERIAL_TARGET = image_processor_serial
+PARALLEL_TARGET = image_processor_parallel
 
-.PHONY: all clean
+# Sources
+COMMON_SRC = main.cpp bmp.hpp
+SERIAL_SRC = bmp_serial.cpp
+PARALLEL_SRC = bmp_parallel.cpp
 
-all: $(TARGET)
+# Output files
+OUTPUT_RAWS = clockwise.raw counter_clockwise.raw rotated_and_blurred.raw gaussian_blurred.raw
+OUTPUT_PNGS = *.png
 
-$(TARGET): $(OBJ)
-	$(CXX) $(CXXFLAGS) -o $(TARGET) $(OBJ)
+.PHONY: all serial parallel clean benchmark
 
-%.o: %.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+all: serial parallel
+
+serial: $(SERIAL_TARGET)
+
+parallel: $(PARALLEL_TARGET)
+
+$(SERIAL_TARGET): $(COMMON_SRC) $(SERIAL_SRC)
+	$(CXX) $(CXXFLAGS) -o $@ main.cpp $(SERIAL_SRC) $(LDFLAGS)
+
+$(PARALLEL_TARGET): $(COMMON_SRC) $(PARALLEL_SRC)
+	$(CXX) $(CXXFLAGS) -fopenmp -o $@ main.cpp $(PARALLEL_SRC) $(LDFLAGS) -fopenmp
+
+benchmark: serial parallel
+	@echo "\n=== SERIAL BENCHMARK ==="
+	@time ./$(SERIAL_TARGET)
+	@echo "\n=== PARALLEL BENCHMARK (4 threads) ==="
+	@OMP_NUM_THREADS=4 time ./$(PARALLEL_TARGET)
 
 clean:
-	rm -f $(OBJ) $(TARGET) $(RAW_OUT) $(PNG_OUT) $(XMP_OUT)
+	rm -f $(SERIAL_TARGET) $(PARALLEL_TARGET) $(OUTPUT_RAWS) $(OUTPUT_PNGS)
