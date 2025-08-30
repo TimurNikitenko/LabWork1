@@ -1,0 +1,80 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, parallel_version ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y imagemagick
+        
+    - name: Set up GCC
+      run: |
+        sudo apt-get install -y g++ make
+        
+    - name: Build serial version
+      run: make serial
+      
+    - name: Build parallel version
+      run: make parallel
+      
+    - name: Run serial version
+      run: ./image_processor_serial
+      
+    - name: Run parallel version
+      run: |
+        export OMP_NUM_THREADS=4
+        ./image_processor_parallel
+        
+    - name: Run benchmark
+      run: make benchmark
+      
+    - name: Check generated files
+      run: |
+        ls -la *.raw *.png || echo "No output files found"
+        
+    - name: Clean build artifacts
+      run: make clean
+      
+  performance-test:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/parallel_version'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y imagemagick g++ make
+        
+    - name: Build both versions
+      run: |
+        make serial
+        make parallel
+        
+    - name: Performance benchmark
+      run: |
+        echo "=== Performance Benchmark Results ==="
+        make benchmark 2>&1 | tee benchmark_results.txt
+        
+    - name: Upload benchmark results
+      uses: actions/upload-artifact@v4
+      with:
+        name: benchmark-results
+        path: benchmark_results.txt
+        
+    - name: Clean up
+      run: make clean

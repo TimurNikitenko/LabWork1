@@ -15,7 +15,7 @@ PARALLEL_SRC = bmp_parallel.cpp
 OUTPUT_RAWS = clockwise.raw counter_clockwise.raw rotated_and_blurred.raw gaussian_blurred.raw
 OUTPUT_PNGS = *.png
 
-.PHONY: all serial parallel clean benchmark
+.PHONY: all serial parallel clean benchmark docs
 
 all: serial parallel
 
@@ -37,3 +37,7 @@ benchmark: serial parallel
 
 clean:
 	rm -f $(SERIAL_TARGET) $(PARALLEL_TARGET) $(OUTPUT_RAWS) $(OUTPUT_PNGS)
+
+docs:
+	doxygen Doxyfile
+	@echo "Documentation generated in docs/html/index.html"
